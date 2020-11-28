@@ -1,12 +1,15 @@
 let s:terraform_doc_buffer = 'TFDOCBUF'
 
 function! terraform_doc#getcontent(url) abort
-	" let url = "https://api.github.com/repos/terraform-providers/terraform-provider-aws/contents/website/docs/r/vpc.html.markdown"
   let lines = readfile(g:terraform_doc_token_filepath) 
   let token = "token " . substitute(lines[0], "\n", "", "")
-  let res = webapi#http#get (a:url, {"Authorization": token, "Accept": "application/vnd.github.v3.raw"})
-  return res.content
-endfunction
+  let res = webapi#http#get (a:url, {"Authorization": token})
+
+  let content = json_decode(res["content"])
+
+  let content_base64 = substitute(content["content"],'\n',"","g")
+  return webapi#base64#b64decode(content_base64)
+  endfunction
 
 function! terraform_doc#getresource() abort
   let curline = substitute(getline("."), '"', "", "g")
@@ -36,7 +39,6 @@ function! terraform_doc#open_document(content) abort
   if empty(files)
     return
   endif
-
 
   if bufexists(s:terraform_doc_buffer)
     let winid = bufwinid(s:terraform_doc_buffer)
